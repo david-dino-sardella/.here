@@ -109,6 +109,9 @@ img.chair{aspect-ratio:auto;object-fit:contain;}
 .static .h-b,.static .sticker,.static .card,.static .cta{opacity:1}
 .static .sticker{transform:rotate(var(--r))}
 @media (prefers-reduced-motion:reduce){.brand,.brand svg,.pill-who{transition:none}}
+@media (min-width:768px){
+  .cards{left:0;right:0;width:calc(100% - 48px);max-width:1100px;margin-inline:auto;grid-template-columns:repeat(2,minmax(0,190px)) minmax(240px,1fr) repeat(2,minmax(0,190px));}
+}
 </style>
 </head>
 <body>
