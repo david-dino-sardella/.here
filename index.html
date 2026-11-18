@@ -146,6 +146,20 @@ img{display:block}
   *,*::before,*::after{scroll-behavior:auto!important}
   .brand,.brand svg,.pill-who,.btn-white,.cta a{transition:none}
 }
+/* Dark handover from hero to the lower section */
+.hero{transition:background-color .22s ease;}
+.nav{transition:background-color .22s ease;}
+
+body.here-dark-handoff .hero,
+body.here-dark-handoff .nav{background-color:var(--night);}
+
+/* Let the navigation pill move upward independently of its hover effect */
+.pill-who{will-change:translate;}
+
+/* No colour animation for reduced-motion preferences */
+@media(prefers-reduced-motion:reduce){
+  .hero,.nav{transition:none;}
+}
 </style>
 </head>
 
@@ -495,6 +509,103 @@ img{display:block}
 
   if (document.fonts && document.fonts.ready) {
     document.fonts.ready.then(refreshLayout);  }
+})();
+</script>
+<script>
+(function () {
+  var nav = document.querySelector('.nav');
+  var pill = document.querySelector('.pill-who');
+  var cta = document.querySelector('#cta');
+  var brands = document.querySelector('#brands');
+
+  if (!nav || !pill || !cta || !brands) return;
+
+  var previousShift = 0;
+  var scheduled = false;
+
+  function updateHandoff() {
+    scheduled = false;
+
+    var navBox = nav.getBoundingClientRect();
+    var ctaBox = cta.getBoundingClientRect();
+    var brandsBox = brands.getBoundingClientRect();
+    var ctaStyle = window.getComputedStyle(cta);
+
+    var ctaVisible =
+      ctaStyle.visibility !== 'hidden' &&
+      Number(ctaStyle.opacity) > 0.5;
+
+    var darkHandoff =
+      brandsBox.top <= navBox.bottom ||
+      (ctaVisible && ctaBox.top <= navBox.bottom + 12);
+
+    document.body.classList.toggle(
+      'here-dark-handoff',
+      darkHandoff
+    );
+
+    if (window.getComputedStyle(pill).display === 'none') {
+      pill.style.translate = '';
+      previousShift = 0;
+      return;
+    }
+
+    var pillBox = pill.getBoundingClientRect();
+
+    /* Recover the pill's normal position before its upward shift. */
+    var originalBottom = pillBox.bottom - previousShift;
+
+    var horizontallyAligned =
+      ctaBox.left < pillBox.right &&
+      ctaBox.right > pillBox.left;
+
+    var shift = 0;
+
+    if (ctaVisible && horizontallyAligned) {
+      shift = Math.min(
+        0,
+        ctaBox.top - originalBottom - 10
+      );
+
+      /* Only move far enough to push the pill off the screen. */
+      shift = Math.max(
+        shift,
+        -(originalBottom + 12)
+      );
+    }
+
+    pill.style.translate = '0 ' + shift + 'px';
+    previousShift = shift;
+
+    var fullyOffscreen = originalBottom + shift <= 0;
+
+    pill.style.pointerEvents = fullyOffscreen ? 'none' : '';
+    pill.inert = fullyOffscreen;
+  }
+
+  function scheduleUpdate() {
+    if (scheduled) return;
+
+    scheduled = true;
+    window.requestAnimationFrame(updateHandoff);
+  }
+
+  window.addEventListener('scroll', scheduleUpdate, {
+    passive: true
+  });
+
+  window.addEventListener('resize', scheduleUpdate);
+  window.addEventListener('load', scheduleUpdate);
+
+  if (window.ScrollTrigger) {
+    ScrollTrigger.addEventListener('refresh', scheduleUpdate);
+  }
+
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(scheduleUpdate);
+  }
+
+  scheduleUpdate();
 })();
 </script>
 </body>
